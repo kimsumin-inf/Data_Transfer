@@ -33,6 +33,11 @@ private:
 
     int traffic_count;
     int delivery_count;
+
+    std::string now_traffic_light_state;
+    std::string init_delivery_state;
+    std::string now_delivery_state;
+
     darknet_ros_msgs::ObjectCount cnt;
     darknet_ros_msgs::BoundingBoxes bbox;
 

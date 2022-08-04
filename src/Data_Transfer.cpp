@@ -11,7 +11,7 @@ Data_Transfer::Data_Transfer()
     subBBOX = nh.subscribe("/darknet_ros/bounding_boxes" ,1,&Data_Transfer::obj_bbox_CB, this);
 
     count =0;
-    size = 15;
+    size = 30;
     traffic_count=0;
     delivery_count=0;
     traffic_light = Eigen::MatrixXd::Zero(size,1);
@@ -37,19 +37,21 @@ void Data_Transfer::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr 
 
     }
 
-
-
-
 }
 
 void Data_Transfer::Traffic_light(int id)  {
     Eigen::MatrixXd data = Eigen::MatrixXd::Zero(1,1);
     data << id;
-    updateSample(traffic_light,data);
-    if (traffic_count >size){
-        mode(traffic_light,size);
-    }
 
+    updateSample(traffic_light,data);
+
+    if (traffic_count >size){
+        now_traffic_light_state= return_ID(mode(traffic_light,size));
+    }
+    else{
+        cout <<"waiting"<<endl;
+    }
+    traffic_count+=1;
 
 
 }
@@ -69,9 +71,21 @@ static inline void updateSample(Eigen::MatrixXd &sample, Eigen::MatrixXd &data)
     sample.block(sample.rows()- 1, 0, 1, sample.cols()) = data;
 }
 int mode(Eigen::MatrixXd data, int size){
-    vector <int> tmp(size,0);
+    int class_size =10;
+    vector <int> tmp(class_size,0);
+    for (int i=0;i<size;i++){
+        tmp[data(i,0)] +=1;
+    }
+    int max=tmp[0];
+    int max_index = 0;
+    for (int i =0; i<class_size;i++){
+        if(max<tmp[i]){
+            max = tmp[i];
+            max_index = i;
+        }
+    }
 
-    return 0;
+    return max_index;
 }
 string return_ID(int value){
     switch(value){
