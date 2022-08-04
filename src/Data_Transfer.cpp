@@ -4,27 +4,32 @@ static inline void updateSample(Eigen::MatrixXd &sample, Eigen::MatrixXd &data);
 int mode(Eigen::MatrixXd data, int size);
 string return_ID(int value);
 
-Data_Transfer::Data_Transfer()
+Data::Data()
 : nh("")
 {
-    subCOUNT = nh.subscribe("/darknet_ros/found_object" ,1,&Data_Transfer::obj_cnt_CB, this);
-    subBBOX = nh.subscribe("/darknet_ros/bounding_boxes" ,1,&Data_Transfer::obj_bbox_CB, this);
+    subCOUNT = nh.subscribe("/darknet_ros/found_object" ,1,&Data::obj_cnt_CB, this);
+    subBBOX = nh.subscribe("/darknet_ros/bounding_boxes" ,1,&Data::obj_bbox_CB, this);
+
+    pubRESULT = nh.advertise<Data_Transfer::data_transfer>("/Data_Transfer",1);
 
     count =0;
-    size = 30;
+    size = 15;
     traffic_count=0;
     delivery_count=0;
     traffic_light = Eigen::MatrixXd::Zero(size,1);
     delivery = Eigen::MatrixXd::Zero(size,1);
 
+    now_traffic_light_state = "none";
+    init_delivery_state = "none";
+    now_delivery_state = "none";
 }
 
-void Data_Transfer::obj_cnt_CB(const darknet_ros_msgs::ObjectCount::ConstPtr &msg) {
+void Data::obj_cnt_CB(const darknet_ros_msgs::ObjectCount::ConstPtr &msg) {
     cnt = *msg;
     count = cnt.count;
 }
 
-void Data_Transfer::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg) {
+void Data::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg) {
     bbox = *msg;
     for (auto i  : bbox.bounding_boxes){
 
@@ -39,7 +44,7 @@ void Data_Transfer::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr 
 
 }
 
-void Data_Transfer::Traffic_light(int id)  {
+void Data::Traffic_light(int id)  {
     Eigen::MatrixXd data = Eigen::MatrixXd::Zero(1,1);
     data << id;
 
@@ -47,6 +52,8 @@ void Data_Transfer::Traffic_light(int id)  {
 
     if (traffic_count >size){
         now_traffic_light_state= return_ID(mode(traffic_light,size));
+        result.traffic_light = now_traffic_light_state;
+        pubRESULT.publish(result);
     }
     else{
         cout <<"waiting"<<endl;
@@ -56,7 +63,7 @@ void Data_Transfer::Traffic_light(int id)  {
 
 }
 
-void Data_Transfer::Delivery(int id) {
+void Data::Delivery(int id) {
 
 }
 static inline void updateSample(Eigen::MatrixXd &sample, Eigen::MatrixXd &data)

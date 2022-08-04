@@ -8,5 +8,5 @@ string detect_Delivery
 # Go & Stop
 bool stop_line_state
 bool stop_line_ignore
-int16 Brake
+int16 brake
 

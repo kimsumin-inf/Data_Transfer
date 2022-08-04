@@ -12,8 +12,9 @@
 
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <darknet_ros_msgs/ObjectCount.h>
+#include "Data_Transfer/data_transfer.h"
 
-class Data_Transfer{
+class Data{
 private:
     void obj_cnt_CB(const darknet_ros_msgs::ObjectCount::ConstPtr& msg);
     void obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr& msg);
@@ -26,7 +27,7 @@ private:
     ros::Subscriber subCOUNT;
     ros::Subscriber subBBOX;
 
-    //ros::Publisher pubRESULT;
+    ros::Publisher pubRESULT;
 
     int count;
     int size;
@@ -43,10 +44,11 @@ private:
 
     Eigen::MatrixXd traffic_light;
     Eigen::MatrixXd delivery;
+    Data_Transfer::data_transfer result;
 
 
 
 
 public:
-    Data_Transfer();
+    Data();
 };
