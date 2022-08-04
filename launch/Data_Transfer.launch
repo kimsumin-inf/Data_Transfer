@@ -1,0 +1,3 @@
+<launch>
+    <node name="Data_Transfer" pkg="Data_Transfer" type="Data_Transfer" output="screen"/>
+</launch>
