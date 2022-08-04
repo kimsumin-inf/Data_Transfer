@@ -1,5 +1,3 @@
-Header header
-
 # traffic light
 string traffic_light
 
@@ -10,5 +8,5 @@ string detect_Delivery
 # Go & Stop
 bool stop_line_state
 bool stop_line_ignore
-int16 break
+int16 Brake
 
