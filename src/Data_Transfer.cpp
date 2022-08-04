@@ -53,6 +53,12 @@ void Data::Traffic_light(int id)  {
     if (traffic_count >size){
         now_traffic_light_state= return_ID(mode(traffic_light,size));
         result.traffic_light = now_traffic_light_state;
+        if ((now_traffic_light_state=="R" || now_traffic_light_state=="LR" || now_traffic_light_state =="Y")){
+            result.stop_line_ignore = false;
+        }
+        else {
+            result.stop_line_ignore = true;
+        }
         pubRESULT.publish(result);
     }
     else{
