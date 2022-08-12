@@ -12,7 +12,7 @@
 
 #include <darknet_ros_msgs/BoundingBoxes.h>
 #include <darknet_ros_msgs/ObjectCount.h>
-#include "Data_Transfer/data_transfer.h"
+#include "data_transfer_msg/data_transfer.h"
 
 class Data{
 private:
