@@ -35,7 +35,7 @@ private:
     void Traffic_light(int id);
     void Delivery(int id);
     static bool compare(id_bbox a, id_bbox b);
-
+    void pub();
     ros::NodeHandle nh;
 
     ros::Subscriber subCOUNT;
@@ -54,6 +54,9 @@ private:
     std::string now_traffic_light_state;
     std::string init_delivery_state;
     std::string now_delivery_state;
+    std::string definition_Delivery;
+    bool stop_line_ignore;
+    bool stop_line_state;
 
     darknet_ros_msgs::ObjectCount cnt;
     darknet_ros_msgs::BoundingBoxes bbox;
@@ -62,7 +65,6 @@ private:
 
     Eigen::MatrixXd traffic_light;
     Eigen::MatrixXd delivery;
-    data_transfer_msg::data_transfer result;
     std::vector<id_bbox> vec;
 
 

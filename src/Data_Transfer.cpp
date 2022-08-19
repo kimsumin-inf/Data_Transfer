@@ -9,7 +9,7 @@ using namespace cv;
 static inline void updateSample(Eigen::MatrixXd &sample, Eigen::MatrixXd &data);
 int mode(Eigen::MatrixXd data, int size);
 string return_ID(int value);
-string to_go(int value);
+string to_go(string value);
 void return_grayscale (Mat &frame);
 int return_center_point(int x_min, int x_max);
 
@@ -33,6 +33,9 @@ Data::Data()
     now_traffic_light_state = "none";
     init_delivery_state = "none";
     now_delivery_state = "none";
+    definition_Delivery = "none";
+    stop_line_ignore = true;
+    stop_line_state = false;
 }
 
 void Data::obj_cnt_CB(const darknet_ros_msgs::ObjectCount::ConstPtr &msg) {
@@ -77,21 +80,19 @@ void Data::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg) {
 void Data::Traffic_light(int id)  {
     Eigen::MatrixXd data = Eigen::MatrixXd::Zero(1,1);
     data << id;
-
+    data_transfer_msg::data_transfer result;
     updateSample(traffic_light,data);
 
     if (traffic_count >size){
         now_traffic_light_state= return_ID(mode(traffic_light,size));
-        result.traffic_light = now_traffic_light_state;
-
         if ((now_traffic_light_state=="R" || now_traffic_light_state=="LR" || now_traffic_light_state =="Y")){
-            result.stop_line_ignore = false;
+            stop_line_ignore = false;
+            pub();
         }
         else {
-            result.stop_line_ignore = true;
+            stop_line_ignore = true;
+            pub();
         }
-
-        pubRESULT.publish(result);
     }
     else{
         ROS_INFO("Waiting for Traffic");
@@ -102,26 +103,43 @@ void Data::Traffic_light(int id)  {
 
 }
 void Data::Delivery(int id) {
+    data_transfer_msg::data_transfer result;
+
     Eigen::MatrixXd data = Eigen::MatrixXd::Zero(1,1);
     data<< id;
     updateSample(delivery, data);
-    if (delivery_count >size){
+    if (delivery_count > size){
         now_delivery_state = return_ID(mode(delivery,size));
         result.detect_Delivery = now_delivery_state;
-        if (delivery_Init == true){
-            init_delivery_state = return_ID(mode(delivery,size));
-            result.init_Delivery = init_delivery_state;
-            result.definition_Delivery = to_go(id);
+        if (delivery_Init==true){
+            init_delivery_state = now_delivery_state;
+            definition_Delivery= to_go(init_delivery_state);
             delivery_Init = false;
+            pub();
         }
-        pubRESULT.publish(result);
-
+        pub();
     }
-    else{
-        ROS_INFO("Waiting for Delivery");
 
-    }
     delivery_count+=1;
+}
+void Data::pub(){
+    printf("\033[2J");
+    printf("\033[1;1H");
+    ROS_INFO("traffic_light_state: %s", now_traffic_light_state.c_str());
+    ROS_INFO("stop_line_ignore: %s", stop_line_ignore ? "true" : "false");
+    ROS_INFO("init_Delivery: %s", init_delivery_state.c_str());
+    ROS_INFO("now_detect_Delivery: %s", now_delivery_state.c_str());
+    ROS_INFO("definition_Delivery: %s", definition_Delivery.c_str());
+
+    data_transfer_msg::data_transfer result;
+    result.traffic_light = now_traffic_light_state;
+    result.stop_line_ignore = stop_line_ignore;
+    result.init_Delivery = init_delivery_state;
+    result.detect_Delivery = now_delivery_state;
+    result.definition_Delivery = definition_Delivery;
+    result.stop_line_state = stop_line_state;
+    result.brake = 0;
+    pubRESULT.publish(result);
 }
 void Data::cam_CB(const sensor_msgs::Image::ConstPtr &msg) {
     ROS_INFO("cam subscirbed : (%d , %d)", msg->width, msg->height);
@@ -155,7 +173,7 @@ static inline void updateSample(Eigen::MatrixXd &sample, Eigen::MatrixXd &data)
 }
 
 int mode(Eigen::MatrixXd data, int size) {
-    int class_size = 10;
+    int class_size = 11;
     vector<int> tmp(class_size, 0);
     for (int i = 0; i < size; i++) {
         tmp[data(i, 0)] += 1;
@@ -198,20 +216,15 @@ string return_ID(int value){
             return "B3";
     }
 }
-string to_go(int value){
-    switch (value){
-        case 5:
-            return "B1";
-        case 6:
-            return "B2";
-        case 7:
-            return "B3";
-        case 8:
-            return "A1";
-        case 9:
-            return "A2";
-        case 10:
-            return "A3";
+string to_go(string value){
+    if (value == "A1"){
+        return "B1";
+    }
+    else if  (value == "A2"){
+        return "B2";
+    }
+    else if (value=="A3"){
+        return "B3";
     }
 }
 int return_center_point(int x_min, int x_max){
