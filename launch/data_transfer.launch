@@ -1,0 +1,4 @@
+
+<launch>
+    <node name="data_transfer" pkg="data_transfer" type="data_transfer" output="screen"/>
+</launch>
