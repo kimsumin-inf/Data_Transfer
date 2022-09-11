@@ -7,33 +7,25 @@ using namespace std;
 static inline void updateSample(Eigen::MatrixXd &sample, Eigen::MatrixXd &data);
 
 Data_Transfer::Data_Transfer()
-:nh(""), pnh("")
+:nh(""), pnh(""), set_hz(10)
 {
     sub_BBOX = nh.subscribe("/darknet_ros/bounding_boxes",1,&Data_Transfer::obj_bbox_CB,this);
     sub_CNT = nh.subscribe("/darknet_ros/found_object", 1, &Data_Transfer::obj_cnt_CB, this);
 
     pub_TL = nh.advertise<data_transfer_msg::traffic_light>("/data_transfer/traffic_light",1);
-    pub_DS = nh.advertise<data_transfer_msg::delivery_state>("/data_transfer/delivery_state",1);
-    pub_DM = nh.advertise<data_transfer_msg::delivery_mission>("/data_transfer/delivery_mission", 1);
 
-    cycle = 0;
     now_time = ros::Time::now().toSec();
     prev_time = now_time;
 
-    delivery_init = true;
-
     tl = Eigen::MatrixXd::Zero(10, 1);
-    dl = Eigen::MatrixXd::Zero(20,1);
+    dl = Eigen::MatrixXd::Zero(10,1);
 
     traffic_cnt = 0;
-    delivery_cnt = 0;
-
 }
 
 void Data_Transfer::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr &msg) {
     BBOX = *msg;
     bbox_vec.clear();
-
     for (auto i : BBOX.bounding_boxes){
         id_bbox tmp;
         tmp.id = i.id;
@@ -41,24 +33,14 @@ void Data_Transfer::obj_bbox_CB(const darknet_ros_msgs::BoundingBoxes::ConstPtr 
         bbox_vec.push_back(tmp);
     }
     sort(bbox_vec.begin(), bbox_vec.end(), compare);
-    if (cycle %6==0) {
-        for (auto i: bbox_vec) {
-            if (i.id < 5) {
-                Traffic_Light(i.id);
-            } else {
 
-            }
+    for (auto i: bbox_vec) {
+        if (i.id < 5) {
+            Traffic_Light(i.id);
         }
     }
-    if (cycle % 3 ==0){
-        for(auto i:bbox_vec){
-            if(i.id>=5 ){
-                Delivery(i.id);
-                break;
-            }
-        }
-    }
-    cycle +=1;
+
+    set_hz.sleep();
 }
 
 void Data_Transfer::obj_cnt_CB(const darknet_ros_msgs::ObjectCount::ConstPtr &msg) {
@@ -74,10 +56,6 @@ void Data_Transfer::obj_cnt_CB(const darknet_ros_msgs::ObjectCount::ConstPtr &ms
         traffic_light_state ="none";
         traffic_light.Traffic_light = traffic_light_state;
         pub_TL.publish(traffic_light);
-
-        delivery_state = "none";
-        delivery.Now_state = delivery_state;
-        pub_DS.publish(delivery);
 
     }
 }
@@ -96,38 +74,6 @@ void Data_Transfer::Traffic_Light(int id) {
     }
 }
 
-void Data_Transfer::Delivery(int id) {
-    Eigen::MatrixXd data = Eigen::MatrixXd::Zero(1,1);
-    data << id;
-    updateSample(dl, data);
-    delivery_cnt +=1;
-
-    if (delivery_cnt >= 20){
-        delivery_state = return_ID(mode(dl,20));
-        delivery.Now_state = delivery_state;
-        if (delivery_init == true){
-            delivery.Pick_up= delivery_state;
-            delivery.Delivery= to_go(delivery_state);
-            delivery_init = false;
-        }
-        pub_DS.publish(delivery);
-    }
-    else {
-        ROS_INFO("Waiting for Delivery_signal");
-    }
-}
-
-string Data_Transfer::to_go(std::string value) {
-    if (value =="A1"){
-        return "B1";
-    }
-    else if (value == "A2"){
-        return "B2";
-    }
-    else if (value == "A3"){
-        return "B3";
-    }
-}
 int Data_Transfer::return_center(int x_min, int x_max){
     return (x_min + x_max) /2;
 }
@@ -163,31 +109,4 @@ int Data_Transfer::mode(Eigen::MatrixXd data, int size) {
     }
 
     return max_index;
-}
-
-string Data_Transfer::return_ID(int value) {
-    switch(value){
-        case 0:
-            return "G";
-        case 1:
-            return "R";
-        case 2:
-            return "LG";
-        case 3:
-            return "LR";
-        case 4:
-            return "Y";
-        case 5:
-            return "A1";
-        case 6:
-            return "A2";
-        case 7:
-            return "A3";
-        case 8:
-            return "B1";
-        case 9:
-            return "B2";
-        case 10:
-            return "B3";
-    }
 }
